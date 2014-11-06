@@ -1,6 +1,7 @@
 package log
 
 import (
+	"os"
 	"reflect"
 	"testing"
 
@@ -10,11 +11,10 @@ import (
 func TestAppendAndGetRecord(t *testing.T) {
 	var err error
 	var log *Log
-	if log, err = Create(); err != nil {
+	dataDir := os.TempDir()
+	if log, err = Create(dataDir); err != nil {
 		t.Errorf("Create failed: %v", err)
 	}
-
-	defer log.Destroy()
 
 	tests := []struct {
 		offset int64

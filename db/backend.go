@@ -1,6 +1,9 @@
 package db
 
 import (
+	"fmt"
+	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/go-distributed/xtree/db/log"
@@ -9,23 +12,46 @@ import (
 )
 
 type backend struct {
-	bt    *btree.BTree
-	cache *cache
-	rev   int
-	log   *log.Log
+	bt     *btree.BTree
+	cache  *cache
+	rev    int
+	log    *log.Log
+	config *DBConfig
 }
 
 func newBackend() *backend {
-	bt := btree.New(10)
-	log, err := log.Create()
+	dataDir, err := ioutil.TempDir("", "backend")
 	if err != nil {
-		panic("Not implemented")
+		panic("not implemented")
 	}
-	return &backend{
-		bt:    bt,
-		cache: newCache(),
-		log:   log,
+
+	config := &DBConfig{
+		DataDir: dataDir,
 	}
+	b, err := newBackendWithConfig(config)
+	if err != nil {
+		panic("not implemented")
+	}
+	return b
+}
+
+func newBackendWithConfig(config *DBConfig) (b *backend, err error) {
+	bt := btree.New(10)
+	b = &backend{
+		bt:     bt,
+		cache:  newCache(),
+		config: config,
+	}
+	haveLog := log.Exist(config.DataDir)
+	switch haveLog {
+	case false:
+		fmt.Println("didn't have log file. Init...")
+		err = b.init(config)
+	case true:
+		fmt.Println("had log file. Restore...")
+		err = b.restore(config)
+	}
+	return
 }
 
 func (b *backend) getData(offset int64) []byte {
@@ -102,5 +128,22 @@ func (b *backend) Ls(pathname string) (paths []Path) {
 		paths = append(paths, *p)
 		return true
 	})
+
 	return
+}
+
+// init() creates a new log file
+func (b *backend) init(config *DBConfig) (err error) {
+	b.log, err = log.Create(config.DataDir)
+	return
+}
+
+// restore() restores database from the log file.
+func (b *backend) restore(config *DBConfig) (err error) {
+	panic("not implemented")
+}
+
+// clean up resource after testing
+func (b *backend) cleanupResource() (err error) {
+	return os.RemoveAll(b.config.DataDir)
 }

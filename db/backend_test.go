@@ -27,6 +27,8 @@ func TestPut(t *testing.T) {
 			t.Errorf("#%d: data = %s, want %s", i, v.data, tt.data)
 		}
 	}
+
+	b.cleanupResource()
 }
 
 func TestPutOnExistingPath(t *testing.T) {
@@ -61,6 +63,7 @@ func TestPutOnExistingPath(t *testing.T) {
 			t.Errorf("#%d 2: data = %s, want %s", i, v.data, tt.data2)
 		}
 	}
+	b.cleanupResource()
 }
 
 func TestGetMVCC(t *testing.T) {
@@ -96,15 +99,16 @@ func TestGetMVCC(t *testing.T) {
 			t.Errorf("#%d: data = %s, want %s", i, v.data, tt.data)
 		}
 	}
+	b.cleanupResource()
 }
 
 func TestLs(t *testing.T) {
-	back := newBackend()
+	b := newBackend()
 	d := []byte("somedata")
-	back.Put(1, *newPath("/a"), d)
-	back.Put(2, *newPath("/a/b"), d)
-	back.Put(3, *newPath("/a/c"), d)
-	back.Put(4, *newPath("/b"), d)
+	b.Put(1, *newPath("/a"), d)
+	b.Put(2, *newPath("/a/b"), d)
+	b.Put(3, *newPath("/a/c"), d)
+	b.Put(4, *newPath("/b"), d)
 
 	tests := []struct {
 		p   string
@@ -118,7 +122,7 @@ func TestLs(t *testing.T) {
 		{"/c", []string{}},
 	}
 	for i, tt := range tests {
-		ps := back.Ls(tt.p)
+		ps := b.Ls(tt.p)
 		if len(ps) != len(tt.wps) {
 			t.Fatalf("#%d: len(ps) = %d, want %d", i, len(ps), len(tt.wps))
 		}
@@ -128,6 +132,10 @@ func TestLs(t *testing.T) {
 			}
 		}
 	}
+	b.cleanupResource()
+}
+
+func TestRestore(t *testing.T) {
 }
 
 func BenchmarkPut(b *testing.B) {
@@ -143,6 +151,7 @@ func BenchmarkPut(b *testing.B) {
 	for i := 1; i < b.N; i++ {
 		back.Put(i, path[i], d)
 	}
+	back.cleanupResource()
 }
 
 func BenchmarkGetWithCache(b *testing.B) {
@@ -163,6 +172,7 @@ func BenchmarkGetWithCache(b *testing.B) {
 			back.Get(i, path[i])
 		}
 	}
+	back.cleanupResource()
 }
 
 func BenchmarkGetWithOutCache(b *testing.B) {
@@ -184,4 +194,5 @@ func BenchmarkGetWithOutCache(b *testing.B) {
 			back.Get(i, path[i])
 		}
 	}
+	back.cleanupResource()
 }
